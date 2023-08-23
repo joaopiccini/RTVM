@@ -7,14 +7,18 @@ import { fetcher } from "../utils/http";
 import { Route } from "../utils/model";
 import { socket } from "../utils/socket-io";
 
-export function DriverPage() {
+export function AdminPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useMap(mapContainerRef);
 
-  const { data: routes, error, isLoading } = useSwr<Route[]>("http://localhost:3000/routes", fetcher, { fallbackData: [],});
-
   useEffect(() => {
     socket.connect();
+
+    socket.on('new-point', (data: {route_id: string, lat: number, lng: number}) => {
+        if (!map?.hasRoute(data.route_id)) {
+
+        }
+    })
     return () => {
       socket.disconnect();
     }
@@ -63,23 +67,9 @@ export function DriverPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "row", height: "100%", width: "100%" }}>
-      <div>
-        <h1>Minha viagem</h1>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <select id="route">
-            {isLoading && <option>Carregando rotas...</option>}
-            {routes!.map((route) => (
-              <option key={route.id} value={route.id}>{route.name}</option>
-            ))}
-          </select>
-          <button type="submit" onClick={startRoute}>Iniciar a viagem</button>
-        </div>
-      </div>
       <div id="map" style={{ height: "100%", width: "100%" }} ref={mapContainerRef}></div>
     </div>
   );
 }
 
-export default DriverPage;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export default AdminPage;
