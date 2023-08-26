@@ -1,5 +1,8 @@
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
+import { RoutesDriverService } from '../routes-driver/routes-driver.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @WebSocketGateway({
   cors: {
@@ -7,13 +10,17 @@ import { Socket } from 'socket.io';
   },
 })
 export class RoutesGateway {
+  // constructor(private routesDriverService: RoutesDriverService) {}
+  constructor(@InjectQueue('new-points') private newPointsQueue: Queue) {}
+
   @SubscribeMessage('new-points')
-  handleMessage(
+  async handleMessage(
     client: Socket,
     payload: { route_id: string; lat: number; lng: number },
-  ): string {
-    client.broadcast.emit('admin-new-point', payload);
-    client.broadcast.emit(`new-point/${payload.route_id}`, payload);
-    return 'Hello world!';
+  ) {
+    await this.newPointsQueue.add(payload);
+    // this.routesDriverService.createOrUpdate(payload);
+    client.broadcast.emit('admin-new-points', payload);
+    client.broadcast.emit(`new-points/${payload.route_id}`, payload);
   }
 }
